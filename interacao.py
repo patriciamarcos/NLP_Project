@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-# CARREGAR TOKENIZER E MODELO (BEST MODEL)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model_name = "cardiffnlp/twitter-roberta-base"
@@ -21,11 +20,9 @@ model.load_state_dict(state)
 model.to(device)
 model.eval()
 
-# CARREGAR TEST SET
 test_df = pd.read_csv("test_clean.csv")
 test_sentences = test_df["clean_tweet"].tolist()
 
-# 4) FUNÇÕES
 def classify_text(text):
     encoded = tokenizer(text, return_tensors="pt", truncation=True).to(device)
     with torch.no_grad():
@@ -60,7 +57,6 @@ def explain_text(text, target_class):
     return tokens, token_scores
 
 
-# GRÁFICO 1 — BARRAS
 def plot_explanation(tokens, scores, top_k=10):
     tokens_clean = [t.replace("Ġ", "") for t in tokens if t not in ["<pad>", "<s>", "</s>"]]
     scores_clean = [s for t, s in zip(tokens, scores) if t not in ["<pad>", "<s>", "</s>"]]

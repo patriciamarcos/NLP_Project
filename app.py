@@ -1,13 +1,11 @@
 from interacao import classify_text, explain_text, plot_explanation, test_sentences
 import streamlit as st
 
-# 1) CONFIG STREAMLIT
 st.set_page_config(page_title="Classificador de Tweets", layout="wide")
 
 st.title("Classificador de Tweets com Explicabilidade")
 st.write("Modelo baseado em **Twitter-RoBERTa** com Integrated Gradients (Captum).")
 
-# 2) INTERFACE
 st.subheader("Escolhe um tweet ou escreve o teu próprio")
 
 col1, col2 = st.columns(2)
@@ -46,7 +44,6 @@ if st.button("Classificar texto", type="primary"):
         )
         st.code(explanation_text)
 
-        # Gráfico
         st.write("### Gráfico de Barras")
         fig1 = plot_explanation(tokens, scores)
         st.pyplot(fig1)

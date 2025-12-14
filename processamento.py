@@ -8,15 +8,12 @@ from nltk.corpus import stopwords
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
-# Caminho do ficheiro ZIP (ajusta o nome conforme o ficheiro que carregares)
 zip_path = "twitter.zip"
 
-# Extrair ficheiros e carregar os CSVs
 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
     file_names = zip_ref.namelist()
     print("Ficheiros no ZIP:", file_names)
 
-    # Identificar automaticamente os ficheiros de treino e teste
     train_name = [f for f in file_names if 'train' in f.lower()][0]
     test_name = [f for f in file_names if 'test' in f.lower()][0]
 
@@ -35,7 +32,6 @@ print("\n", test_df.info())
 print("\n Distribuição das classes no treino:")
 print(train_df['label'].value_counts(normalize=True).round(3) * 100)
 
-# --- Comprimento médio dos tweets ---
 tweet_length = train_df['tweet'].apply(lambda x: len(str(x).split()))
 print("\nComprimento médio dos tweets:", tweet_length.mean())
 
@@ -45,13 +41,11 @@ print(train_df[train_df['label'] == 0]['tweet'].iloc[0])
 print("\nExemplo de tweet com HATE SPEECH (label 1):")
 print(train_df[train_df['label'] == 1]['tweet'].iloc[0])
 
-#PRÉ-PROCESSAMENTO DOS TEXTOS
 
 stop_words = set(stopwords.words('english'))
 
 def fix_mojibake(text):
     try:
-        # Codifica como cp1252 e descodifica como utf-8 para corrigir mojibake comum
         return text.encode('cp1252').decode('utf-8')
     except:
         return text
@@ -59,24 +53,16 @@ def fix_mojibake(text):
 
 def clean_tweet(text):
     text = fix_mojibake(text)
-    # 1. Remover menções
     text = re.sub(r'@[\w_]+', '', text)
     text = text.encode('ascii', 'ignore').decode('ascii')
-    # 2. Remover links
     text = re.sub(r'http\S+|www.\S+', '', text)
-    # 3. Remover '#' mas manter a palavra
     text = re.sub(r'#', '', text)
-    # 4. Remover pontuação
     text = text.translate(str.maketrans('', '', string.punctuation))
-    # 5. Converter para minúsculas
     text = text.lower()
-    # 6. Remover stopwords
     tokens = text.split()
     tokens = [word for word in tokens if word not in stop_words]
-    # Juntar novamente
     return " ".join(tokens)
 
-# Aplicar a limpeza aos tweets de treino e teste
 train_df['clean_tweet'] = train_df['tweet'].apply(clean_tweet)
 test_df['clean_tweet'] = test_df['tweet'].apply(clean_tweet)
 
@@ -92,17 +78,13 @@ print("Saved to test_clean.csv (apenas tweet limpo)")
 train_df_to_save.to_csv('train_clean.csv', index=False)
 print("Saved to train_clean.csv (apenas tweet limpo)")
 
-# NUVEM DE PALAVRAS (TEXTO LIMPO)
 
-# Gerar texto concatenado por classe
 hate_text_clean = " ".join(train_df[train_df['label'] == 1]['clean_tweet'].astype(str))
 normal_text_clean = " ".join(train_df[train_df['label'] == 0]['clean_tweet'].astype(str))
 
-# Criar as nuvens
 hate_wc_clean = WordCloud(width=800, height=500, background_color='black', colormap='Reds').generate(hate_text_clean)
 normal_wc_clean = WordCloud(width=800, height=500, background_color='black', colormap='Blues').generate(normal_text_clean)
 
-# Mostrar as duas nuvens lado a lado
 plt.figure(figsize=(16, 8))
 
 plt.subplot(1, 2, 1)

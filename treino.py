@@ -16,7 +16,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Configuração inicial
 random.seed(42)
 np.random.seed(42)
 torch.manual_seed(42)
@@ -30,7 +29,6 @@ test_df = pd.read_csv("test_clean.csv")
 train_df = train_df.dropna(subset=["clean_tweet", "label"])
 
 
-# Divisão treino / validação
 train_texts, val_texts, train_labels, val_labels = train_test_split(
     train_df["clean_tweet"].tolist(),
     train_df["label"].tolist(),
@@ -39,12 +37,10 @@ train_texts, val_texts, train_labels, val_labels = train_test_split(
     stratify=train_df["label"]
 )
 
-# Converter em formato Dataset
 train_dataset = Dataset.from_dict({"text": train_texts, "label": train_labels})
 val_dataset = Dataset.from_dict({"text": val_texts, "label": val_labels})
 dataset = DatasetDict({"train": train_dataset, "validation": val_dataset})
 
-# Tokenização
 model_name = "cardiffnlp/twitter-roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -55,7 +51,6 @@ tokenized_datasets = dataset.map(tokenize, batched=True)
 tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
 tokenized_datasets.set_format("torch")
 
-# Modelo
 config = RobertaConfig.from_pretrained(
     model_name,
     num_labels=2,
@@ -68,7 +63,6 @@ model = AutoModelForSequenceClassification.from_pretrained(
     config=config
 ).to(device)
 
-# Otimizador / Scheduler
 num_epochs = 15
 batch_size = 32
 num_training_steps = len(tokenized_datasets["train"]) // batch_size * num_epochs
@@ -81,7 +75,6 @@ scheduler = get_linear_schedule_with_warmup(
     num_training_steps=num_training_steps
 )
 
-# Pesos das classes
 unique, counts = np.unique(train_df["label"], return_counts=True)
 num_classes = len(unique)
 total = sum(counts)
@@ -95,7 +88,6 @@ print("Class weights:", class_weights.cpu().numpy())
 
 criterion = torch.nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.2)
 
-# Dataloaders
 train_loader = DataLoader(
     tokenized_datasets["train"],
     batch_size=batch_size,
@@ -109,11 +101,9 @@ val_loader = DataLoader(
     collate_fn=default_data_collator
 )
 
-# Métricas
 accuracy_metric = evaluate.load("accuracy")
 f1_metric = evaluate.load("f1")
 
-# Loop de treino manual + checkpointing
 history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": [], "f1": []}
 
 best_val_loss = float("inf")
@@ -185,7 +175,6 @@ for epoch in range(num_epochs):
                f"TrainLoss={avg_train_loss:.4f} | ValLoss={avg_val_loss:.4f} | "
                f"TrainAcc={train_acc:.4f} | ValAcc={val_acc:.4f} | F1={f1:.4f}")
 
-# Carregar o melhor modelo
 model.load_state_dict(torch.load(best_model_path))
 model.eval()
 
@@ -193,7 +182,6 @@ torch.save(model.state_dict(), "modelo_final.pth")
 tokenizer.save_pretrained("tokenizer/")
 print("Modelo final e tokenizer guardados!")
 
-# Avaliação final (Classification Report + Confusion Matrix)
 final_preds = []
 final_labels = []
 
@@ -211,7 +199,6 @@ with torch.no_grad():
 print("\n=== CLASSIFICATION REPORT FINAL ===")
 print(classification_report(final_labels, final_preds, digits=4))
 
-# Matriz de confusão
 cm = confusion_matrix(final_labels, final_preds)
 plt.figure(figsize=(6, 5))
 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
